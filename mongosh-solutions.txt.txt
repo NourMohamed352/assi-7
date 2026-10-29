@@ -1,0 +1,268 @@
+Microsoft Windows [Version 10.0.26200.9711]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\Users\noor1>mongosh
+Current Mongosh Log ID: 6ae347fb1bd46777f2b40ef9
+Connecting to:          mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.14.0
+Using MongoDB:          9.0.4
+Using Mongosh:          2.14.0
+
+For mongosh info see: https://www.mongodb.com/docs/mongodb-shell/
+
+------
+   The server generated these startup warnings when booting
+   2026-10-29T13:05:19.043+02:00: Access control is not enabled for the database. Read and write access to data and configuration is unrestricted
+------
+
+test> use blog_app
+switched to db blog_app
+blog_app> db.createCollection("books", {
+|   validator: {
+|     $jsonSchema: {
+|       bsonType: "object",
+|       required: ["title"],
+|       properties: {
+|         title: { bsonType: "string", minLength: 1 }
+|       }
+|     }
+|   }
+| })
+MongoServerError[NamespaceExists]: namespace 'blog_app.books' already exists, but with different options: { uuid: UUID("b837c3e0-db93-479e-bd5a-4d9b3b3dedf7"), validator: { $jsonSchema: { bsonType: "object", required: [ "title" ], properties: { title: { bsonType: "string", minLength: 1, description: "Title must be a non-empty string" } } } }, validationAction: "error" }, requested: { validator: { $jsonSchema: { bsonType: "object", required: [ "title" ], properties: { title: { bsonType: "string", minLength: 1 } } } } }
+blog_app> db.book.drop()
+true
+blog_app> db.createCollection("book", {
+|   validator: {
+|     $jsonSchema: {
+|       bsonType: "object",
+|       required: ["title"],
+|       properties: {
+|         title: { bsonType: "string", minLength: 1 }
+|       }
+|     }
+|   }
+| })
+{ ok: 1 }
+blog_app>
+(To exit, press Ctrl+C again or Ctrl+D or type .exit)
+blog_app> db.author.drop();
+true
+blog_app> db.author.insertOne({ name: "Author1", nationality: "British" });
+{
+  acknowledged: true,
+  insertedId: ObjectId('6ae34a0f1bd46777f2b40efa')
+}
+blog_app> if (!db.getCollectionNames().includes("logs")) {
+|     db.createCollection("logs", { capped: trtrue, size: 1048576 });
+| }
+
+blog_app> db.book.createIndex({ title: 1 });
+title_1
+blog_app> db.book.insertOne({
+|   title: "Book1",
+|   author: "Ali",
+|   year: 1937,
+|   genres: ["Fantasy", "Adventure"]
+| });
+{
+  acknowledged: true,
+  insertedId: ObjectId('6ae34a311bd46777f2b40efb')
+}
+blog_app> db.book.insertMany([
+|   { title: "Future", author: "George Orwell", year: 2020, genres: ["Science Fiction"] },
+|   { title: "To Kill a Mockingbird", author: "Harper Lee", year: 1960, genres: ["Classic", "Fiction"] },
+|   { title: "Brave New World", author: "Aldous Huxley", year: 2006, genres: ["Dystopian", "Science Fiction"] }
+| ]);
+{
+  acknowledged: true,
+  insertedIds: {
+    '0': ObjectId('6ae34a3b1bd46777f2b40efc'),
+    '1': ObjectId('6ae34a3b1bd46777f2b40efd'),
+    '2': ObjectId('6ae34a3b1bd46777f2b40efe')
+  }
+}
+blog_app> const bookToLog = db.book.findOne({ title: "Brave New World" });
+| db.logs.insertOne({ book_id: bookToLog._id.toString(), action: "borrowed" });
+{
+  acknowledged: true,
+  insertedId: ObjectId('6ae34a451bd46777f2b40eff')
+}
+blog_app> db.book.updateOne({ title: "Future" }, { $set: { year: 2022 } });
+|
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+blog_app> db.book.findOne({ title: "Brave New World" });
+{
+  _id: ObjectId('6ae34a3b1bd46777f2b40efe'),
+  title: 'Brave New World',
+  author: 'Aldous Huxley',
+  year: 2006,
+  genres: [ 'Dystopian', 'Science Fiction' ]
+}
+blog_app> db.book.find({ year: { $gte: 1990, $$lte: 2010 } });
+|
+[
+  {
+    _id: ObjectId('6ae34a3b1bd46777f2b40efe'),
+    title: 'Brave New World',
+    author: 'Aldous Huxley',
+    year: 2006,
+    genres: [ 'Dystopian', 'Science Fiction' ]
+  }
+]
+blog_app> db.book.find({ genres: "Science Fiction" });
+|
+[
+  {
+    _id: ObjectId('6ae34a3b1bd46777f2b40efc'),
+    title: 'Future',
+    author: 'George Orwell',
+    year: 2022,
+    genres: [ 'Science Fiction' ]
+  },
+  {
+    _id: ObjectId('6ae34a3b1bd46777f2b40efe'),
+    title: 'Brave New World',
+    author: 'Aldous Huxley',
+    year: 2006,
+    genres: [ 'Dystopian', 'Science Fiction' ]
+  }
+]
+blog_app> db.book.find().sort({ year: -1 }).skip(2).limit(3);
+|
+[
+  {
+    _id: ObjectId('6ae34a3b1bd46777f2b40efd'),
+    title: 'To Kill a Mockingbird',
+    author: 'Harper Lee',
+    year: 1960,
+    genres: [ 'Classic', 'Fiction' ]
+  },
+  {
+    _id: ObjectId('6ae34a311bd46777f2b40efb'),
+    title: 'Book1',
+    author: 'Ali',
+    year: 1937,
+    genres: [ 'Fantasy', 'Adventure' ]
+  }
+]
+blog_app> db.book.find({ year: { $type: "int" } });
+|
+[
+  {
+    _id: ObjectId('6ae34a311bd46777f2b40efb'),
+    title: 'Book1',
+    author: 'Ali',
+    year: 1937,
+    genres: [ 'Fantasy', 'Adventure' ]
+  },
+  {
+    _id: ObjectId('6ae34a3b1bd46777f2b40efc'),
+    title: 'Future',
+    author: 'George Orwell',
+    year: 2022,
+    genres: [ 'Science Fiction' ]
+  },
+  {
+    _id: ObjectId('6ae34a3b1bd46777f2b40efd'),
+    title: 'To Kill a Mockingbird',
+    author: 'Harper Lee',
+    year: 1960,
+    genres: [ 'Classic', 'Fiction' ]
+  },
+  {
+    _id: ObjectId('6ae34a3b1bd46777f2b40efe'),
+    title: 'Brave New World',
+    author: 'Aldous Huxley',
+    year: 2006,
+    genres: [ 'Dystopian', 'Science Fiction' ]
+  }
+]
+blog_app> db.book.find({ genres: { $nin: ["Horror", "Science Fiction"] } });
+|
+[
+  {
+    _id: ObjectId('6ae34a311bd46777f2b40efb'),
+    title: 'Book1',
+    author: 'Ali',
+    year: 1937,
+    genres: [ 'Fantasy', 'Adventure' ]
+  },
+  {
+    _id: ObjectId('6ae34a3b1bd46777f2b40efd'),
+    title: 'To Kill a Mockingbird',
+    author: 'Harper Lee',
+    year: 1960,
+    genres: [ 'Classic', 'Fiction' ]
+  }
+]
+blog_app> db.book.deleteMany({ year: { $lt: 2000 } });
+|
+{ acknowledged: true, deletedCount: 2 }
+blog_app> db.book.aggregate([
+|   { $match: { year: { $gt: 2000 } } },
+|   { $sort: { year: -1 } }
+| ]);
+[
+  {
+    _id: ObjectId('6ae34a3b1bd46777f2b40efc'),
+    title: 'Future',
+    author: 'George Orwell',
+    year: 2022,
+    genres: [ 'Science Fiction' ]
+  },
+  {
+    _id: ObjectId('6ae34a3b1bd46777f2b40efe'),
+    title: 'Brave New World',
+    author: 'Aldous Huxley',
+    year: 2006,
+    genres: [ 'Dystopian', 'Science Fiction' ]
+  }
+]
+blog_app> db.book.aggregate([
+|   { $match: { year: { $gt: 2000 } } },
+|   { $project: { _id: 0, title: 1, author: 1, year: 1 } }
+| ]);
+|
+[
+  { title: 'Future', author: 'George Orwell', year: 2022 },
+  { title: 'Brave New World', author: 'Aldous Huxley', year: 2006 }
+]
+blog_app> db.book.aggregate([
+|   { $unwind: "$genres" },
+|   { $project: { _id: 0, title: 1, genres: 1 } }
+| ]);
+[
+  { title: 'Future', genres: 'Science Fiction' },
+  { title: 'Brave New World', genres: 'Dystopian' },
+  { title: 'Brave New World', genres: 'Science Fiction' }
+]
+blog_app> db.logs.aggregate([
+|   {
+|     $lookup: {
+|       from: "book",
+|       localField: "book_id",
+|       foreignField: "_id",
+|       as: "book_details"
+|     }
+|   }
+| ]);
+[
+  {
+    _id: ObjectId('6ae32f7427c4de61196cad07'),
+    book_id: '64b5c2d8a123456ef8914',
+    action: 'borrowed',
+    book_details: []
+  },
+  {
+    _id: ObjectId('6ae34a451bd46777f2b40eff'),
+    book_id: '6ae34a3b1bd46777f2b40efe',
+    action: 'borrowed',
+    book_details: []
+  }
+]
+blog_app>
